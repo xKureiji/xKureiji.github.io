@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Texto Ultra Personalizable</title>
+    <style>
+        :root {
+            /* Variables CSS simplificadas */
+            --editor-width: 800px;
+            --editor-height: 600px;
+            --toolbar-bg: #f5f5f5;
+            --toolbar-border: 1px solid #ccc;
+            --toolbar-padding: 10px;
+            --toolbar-font-size: 14px;
+            --editor-bg: #ffffff; /* Fondo blanco */
+            --border-color: #ff4500;
+            --border-width: 2px;
+            --border-radius: 8px;
+            --text-color: #333333;
+            --font-size: 16px;
+            --font-family: Arial, sans-serif;
+            --line-height: 1.6;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --button-bg: #ffffff;
+            --button-hover: #e0e0e0;
+            --button-active: #c0c0c0;
+            --button-padding: 6px 12px;
+            --editor-padding: 15px;
+            --scrollbar-color: #888;
+            --scrollbar-bg: #f1f1f1;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: linear-gradient(to bottom, black, gray, black);
+            font-family: var(--font-family);
+        }
+        .editor-container {
+            width: var(--editor-width);
+            height: var(--editor-height);
+            position: relative;
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .toolbar {
+            background: var(--toolbar-bg);
+            padding: var(--toolbar-padding);
+            border-bottom: var(--toolbar-border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .toolbar button, .toolbar select, .toolbar input {
+            padding: var(--button-padding);
+            margin: 2px;
+            cursor: pointer;
+            background: var(--button-bg);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: var(--toolbar-font-size);
+            transition: background 0.2s, transform 0.1s;
+        }
+        .toolbar button:hover { background: var(--button-hover); }
+        .toolbar button.active { background: var(--button-active); border-color: #999; transform: scale(0.95); }
+        .color-btn { width: 28px; height: 20px; padding: 0; border: 1px solid #aaa; }
+        #textEditor {
+            width: 100%;
+            height: calc(100% - 60px);
+            padding: var(--editor-padding);
+            box-sizing: border-box;
+            border: var(--border-width) solid var(--border-color);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            outline: none;
+            resize: both;
+            background: white url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="none" stroke="lightblue" stroke-width="1"/></svg>');
+            background-size: 20px 20px; /* Tamaño de la cuadrícula */
+            color: var(--text-color);
+            font-size: var(--font-size);
+            line-height: var(--line-height);
+            font-family: var(--font-family);
+            overflow: auto;
+            transition: all 0.3s ease;
+        }
+        #textEditor::-webkit-scrollbar {
+            width: 10px;
+        }
+        #textEditor::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-color);
+            border-radius: 5px;
+        }
+        #textEditor::-webkit-scrollbar-track {
+            background: var(--scrollbar-bg);
+        }
+        .settings-panel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: none;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 20;
+        }
+        .settings-panel label {
+            display: block;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <div class="toolbar">
+            <!-- Formato básico -->
+            <button id="boldBtn" onclick="toggleFormat('bold')">Negrita</button>
+            <button id="italicBtn" onclick="toggleFormat('italic')">Cursiva</button>
+            <button id="underlineBtn" onclick="toggleFormat('underline')">Subrayado</button>
+            <button id="strikeBtn" onclick="toggleFormat('strikeThrough')">Tachado</button>
+            <button id="superscriptBtn" onclick="toggleFormat('superscript')">Superíndice</button>
+            <button id="subscriptBtn" onclick="toggleFormat('subscript')">Subíndice</button>
+            <!-- Alineación -->
+            <button id="alignLeftBtn" onclick="toggleFormat('justifyLeft')">Izquierda</button>
+            <button id="alignCenterBtn" onclick="toggleFormat('justifyCenter')">Centro</button>
+            <button id="alignRightBtn" onclick="toggleFormat('justifyRight')">Derecha</button>
+            <button id="alignJustifyBtn" onclick="toggleFormat('justifyFull')">Justificado</button>
+            <!-- Colores -->
+            <input type="color" id="textColor" onchange="setColor('foreColor', this.value)" title="Color de texto">
+            <input type="color" id="bgColor" onchange="setColor('backColor', this.value)" title="Color de fondo">
+            <input type="color" id="highlightColor" onchange="setColor('hiliteColor', this.value)" title="Resaltado">
+            <!-- Fuentes y tamaños -->
+            <select id="fontFamily" onchange="setFont(this.value)">
+                <option value="Arial">Arial</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Comic Sans MS">Comic Sans MS</option>
+            </select>
+            <select id="fontSize" onchange="setFontSize(this.value)">
+                <option value="10">10px</option>
+                <option value="12">12px</option>
+                <option value="14">14px</option>
+                <option value="16" selected>16px</option>
+                <option value="18">18px</option>
+                <option value="20">20px</option>
+                <option value="24">24px</option>
+                <option value="28">28px</option>
+                <option value="32">32px</option>
+                <option value="40">40px</option>
+            </select>
+            <input type="number" id="lineHeight" min="1" max="3" step="0.1" value="1.6" onchange="setLineHeight(this.value)" title="Interlineado">
+            <!-- Listas y sangrías -->
+            <button onclick="toggleFormat('insertUnorderedList')">Lista •</button>
+            <button onclick="toggleFormat('insertOrderedList')">Lista 1.</button>
+            <button onclick="toggleFormat('indent')">Sangría +</button>
+            <button onclick="toggleFormat('outdent')">Sangría -</button>
+            <!-- Estilos avanzados -->
+            <button onclick="insertHorizontalRule()">Línea HR</button>
+            <button onclick="insertLink()">Enlace</button>
+            <button onclick="toggleFormat('removeFormat')">Quitar formato</button>
+            <!-- Utilidades -->
+            <button onclick="clearText()">Borrar todo</button>
+            <button onclick="toggleSettings()">⚙️ Configuración</button>
+        </div>
+        <div contenteditable="true" id="textEditor" spellcheck="true"></div>
+    </div>
+    <div class="settings-panel" id="settingsPanel">
+        <h3>Configuración Avanzada</h3>
+        <label>Color de borde: <input type="color" id="borderColor" value="#ff4500" onchange="updateBorderColor(this.value)"></label>
+        <label>Ancho del borde: <input type="number" id="borderWidth" min="0" max="10" value="2" onchange="updateBorderWidth(this.value)"></label>
+        <label>Color del texto por defecto: <input type="color" id="defaultTextColor" value="#333333" onchange="updateTextColor(this.value)"></label>
+        <label>Ancho del editor: <input type="number" id="editorWidth" min="400" max="2000" value="800" onchange="updateWidth(this.value)"></label>
+        <label>Alto del editor: <input type="number" id="editorHeight" min="300" max="2000" value="600" onchange="updateHeight(this.value)"></label>
+        <label>Redondeo de bordes: <input type="number" id="borderRadius" min="0" max="50" value="8" onchange="updateBorderRadius(this.value)"></label>
+        <label>Padding del editor: <input type="number" id="editorPadding" min="5" max="50" value="15" onchange="updatePadding(this.value)"></label>
+        <label>Fuente por defecto: 
+            <select id="defaultFont" onchange="updateDefaultFont(this.value)">
+                <option value="Arial">Arial</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Verdana">Verdana</option>
+            </select>
+        </label>
+        <label>Resize: 
+            <select id="resize" onchange="updateResize(this.value)">
+                <option value="both">Ambos</option>
+                <option value="horizontal">Horizontal</option>
+                <option value="vertical">Vertical</option>
+                <option value="none">Ninguno</option>
+            </select>
+        </label>
+        <label>Color de barra de herramientas: <input type="color" id="toolbarBg" value="#f5f5f5" onchange="updateToolbarBg(this.value)"></label>
+        <label>Color de botones: <input type="color" id="buttonBg" value="#ffffff" onchange="updateButtonBg(this.value)"></label>
+        <label>Color de desplazamiento: <input type="color" id="scrollbarColor" value="#888" onchange="updateScrollbarColor(this.value)"></label>
+    </div>
+    <script>
+        const editor = document.getElementById('textEditor');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const formatButtons = ['boldBtn', 'italicBtn', 'underlineBtn', 'strikeBtn', 'superscriptBtn', 'subscriptBtn', 
+                              'alignLeftBtn', 'alignCenterBtn', 'alignRightBtn', 'alignJustifyBtn'];
+        // Funciones de formato
+        function toggleFormat(command) {
+            document.execCommand(command, false, null);
+            updateButtonStates();
+            editor.focus();
+        }
+        function setColor(command, color) {
+            document.execCommand(command, false, color);
+            editor.focus();
+        }
+        function setFont(font) {
+            document.execCommand('fontName', false, font);
+            editor.focus();
+        }
+        function setFontSize(size) {
+            document.execCommand('fontSize', false, Math.round(parseInt(size) / 4));
+            editor.style.fontSize = `${size}px`;
+            editor.focus();
+        }
+        function setLineHeight(height) {
+            editor.style.lineHeight = height;
+            editor.focus();
+        }
+        function insertHorizontalRule() {
+            document.execCommand('insertHorizontalRule', false, null);
+            editor.focus();
+        }
+        function insertLink() {
+            const url = prompt('Introduce la URL:', 'https://');
+            if (url) document.execCommand('createLink', false, url);
+            editor.focus();
+        }
+        function clearText() {
+            editor.innerHTML = '';
+            resetStyles();
+            editor.focus();
+        }
+        // Configuración
+        function toggleSettings() {
+            settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+        }
+        function updateBorderColor(color) {
+            document.documentElement.style.setProperty('--border-color', color);
+        }
+        function updateBorderWidth(width) {
+            document.documentElement.style.setProperty('--border-width', `${width}px`);
+        }
+        
+        function updateTextColor(color) {
+            document.documentElement.style.setProperty('--text-color', color);
+            editor.style.color = color;
+        }
+        function updateWidth(width) {
+            document.documentElement.style.setProperty('--editor-width', `${width}px`);
+        }
+        function updateHeight(height) {
+            document.documentElement.style.setProperty('--editor-height', `${height}px`);
+        }
+        function updateBorderRadius(radius) {
+            document.documentElement.style.setProperty('--border-radius', `${radius}px`);
+            editor.style.borderRadius = `0 0 ${radius}px ${radius}px`;
+        }
+        function updatePadding(padding) {
+            document.documentElement.style.setProperty('--editor-padding', `${padding}px`);
+        }
+        function updateDefaultFont(font) {
+            document.documentElement.style.setProperty('--font-family', font);
+            editor.style.fontFamily = font;
+        }
+        function updateResize(resize) {
+            document.documentElement.style.setProperty('--resize', resize);
+        }
+        function updateToolbarBg(color) {
+            document.documentElement.style.setProperty('--toolbar-bg', color);
+        }
+        function updateButtonBg(color) {
+            document.documentElement.style.setProperty('--button-bg', color);
+        }
+        function updateScrollbarColor(color) {
+            document.documentElement.style.setProperty('--scrollbar-color', color);
+        }
+        // Actualizar estado de botones
+        function updateButtonStates() {
+            formatButtons.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    const command = id.replace('Btn', '');
+                    btn.classList.toggle('active', document.queryCommandState(command));
+                }
+            });
+        }
+        // Resetear estilos
+        function resetStyles() {
+            document.getElementById('fontSize').value = '16';
+            document.getElementById('fontFamily').value = 'Arial';
+            document.getElementById('lineHeight').value = '1.6';
+            editor.style.fontSize = '16px';
+            editor.style.lineHeight = '1.6';
+            editor.style.fontFamily = 'Arial';
+            editor.style.color = '#333333';
+            formatButtons.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.classList.remove('active');
+            });
+        }
+        // Listeners
+        editor.addEventListener('keyup', updateButtonStates);
+        editor.addEventListener('mouseup', updateButtonStates);
+        editor.addEventListener('click', updateButtonStates);
+        editor.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            document.execCommand('insertText', false, text);
+        });
+        // Evitar conflictos al seleccionar múltiples botones
+        editor.addEventListener('selectionchange', updateButtonStates);
+        // Inicialización
+        updateButtonStates();
+        editor.focus();
+    </script>
+</body>
+</html>
